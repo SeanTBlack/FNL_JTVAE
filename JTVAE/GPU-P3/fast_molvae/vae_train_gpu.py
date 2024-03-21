@@ -111,8 +111,10 @@ model = JTNNVAE(vocab, args.hidden_size, args.latent_size, args.depthT, args.dep
 if args.load_epoch > 0:
     print("Restarting from last training epoch #", args.load_epoch)
 
-    save_dict = torch.load(args.save_dir + "/model.epoch-" + str(args.load_epoch)) #
-    model.load_state_dict(save_dict['model_state_dict'])#
+    model_file = torch.load(args.save_dir + "/model.epoch-" + str(args.load_epoch)) #
+    optimizer_scheduler = torch.load(args.save_dir + "/optimizer_for_restart.epoch-" + str(args.load_epoch))
+    
+    model.load_state_dict(model_file)#
     #optimizer.load_state_dict(save_dict['optimizer'])
 
     #scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
@@ -147,9 +149,9 @@ else:
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 if args.load_epoch > 0:
-    optimizer.load_state_dict(save_dict['optimizer'])
+    optimizer.load_state_dict(optimizer_scheduler['optimizer'])
     scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
-    scheduler.load_state_dict(save_dict['scheduler'])
+    scheduler.load_state_dict(optimizer_scheduler['scheduler'])
 
 else:
     scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
@@ -270,12 +272,11 @@ for epoch in range(start_epoch, args.epoch):
             model_state_dict = model.state_dict()
         
         save_dict = {
-            'model_state_dict': model_state_dict,
             'optimizer': optimizer.state_dict(),
             'scheduler': scheduler.state_dict()
         }
-
-        torch.save(save_dict, args.save_dir + "/model.epoch-" + str(epoch))
+        torch.save(model_state_dict, args.save_dir + "/model.epoch-" + str(epoch))
+        torch.save(save_dict, args.save_dir + "/optimizer_for_restart.epoch-" + str(epoch))
 
 end_time = time.time()
 tot_time = end_time - start_time
