@@ -6,11 +6,10 @@
 ##SBATCH --partition=short
 
 #SBATCH --ntasks=1
-#SBATCH --ntasks-per-core=1
-#SBATCH --cpus-per-task=36
-#SBATCH --mem=200g
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=100g
 #SBATCH --time=09:00:00
-
+echo "test"
 source /home/blackst/.bashrc
 hostname -s
 
@@ -23,10 +22,10 @@ echo $WRK
 cd $WRK
 
 EDF="$JTVAE_CPU_PATH""/fast_molvae/EDF.py"
-DAT="../Raw-Data/ZINC/test.txt"
-VOC="../Vocabulary/all_vocab.txt"
-MOD="../Train/MODEL-TRAIN-test/model.epoch-39"
-OUT="EDF-Test.out-35"
+DAT="/mnt/projects/ATOM/blackst/GMD/LOGP-JTVAE-PAPER/Raw-Data/ZINC/test.txt"
+VOC="/mnt/projects/ATOM/blackst/GMD/LOGP-JTVAE-PAPER/Vocabulary/all_vocab.txt"
+MOD="/mnt/projects/ATOM/blackst/GMD/LOGP-JTVAE-PAPER/Train/MODEL-restart2/model.epoch-9"
+OUT="/mnt/projects/ATOM/blackst/GMD/LOGP-JTVAE-PAPER/Recon-Eval/EDF-Test-2.out-9"
 
 python -u $EDF -d $DAT        \
                -v $VOC        \

@@ -97,7 +97,8 @@ vocab = Vocab(vocab)
 #JI - Load Fast-JTVAE Model/Autoencoder
 
 model = JTNNVAE(vocab, hidden_size, latent_size, depthT, depthG)
-model.load_state_dict(torch.load(opts.model_path, map_location='cpu'))
+save_dict = torch.load(opts.model_path, map_location='cpu')
+model.load_state_dict(save_dict['model_state_dict'])
 model = model.cpu()
 
 print ('Encoding-Decoding is using   ', n_cpus, 'processes/cores')

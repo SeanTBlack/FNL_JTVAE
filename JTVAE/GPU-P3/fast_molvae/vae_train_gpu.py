@@ -1,27 +1,25 @@
 import torch
-from functools import reduce
-import operator as op
-#print("Before imports: ")
-#print(torch.cuda.mem_get_info()[0]/1000000000)
-#print()
+#from functools import reduce
+#import operator as op
 
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-from torch.utils.data import DataLoader
-from torch.autograd import Variable
+#from torch.utils.data import DataLoader
+#from torch.autograd import Variable
 
 from torch.nn.parallel import DistributedDataParallel as DDP #Testing
 from torch.distributed import init_process_group, destroy_process_group
 
-import math, random, sys
+import math, sys
 import numpy as np
 import argparse
-from collections import deque
-import pickle
+#from collections import deque
+#import pickle
 import rdkit
 import time
-import gc, os
+#import gc, json
+import os
 
 from fast_jtnn import *
 
@@ -87,12 +85,13 @@ parser.add_argument("--debug", default=False, action='store_true')
 parser.add_argument('--num_workers', type=int, default=4)
 
 args = parser.parse_args()
-print (args)
+print(args)
 
 #Prepare the vocabulary for the model
 vocab = [x.strip("\r\n ") for x in open(args.vocab)] 
 vocab = Vocab(vocab)
 
+"""
 ### STB - DDP related code
 if args.mult_gpus == True:
     print("Attempting to use more than one GPU")
@@ -101,30 +100,72 @@ if args.mult_gpus == True:
 
     init_process_group(backend='nccl')
 ###
+else:
+    local_rank = 0
+"""
 
 model = JTNNVAE(vocab, args.hidden_size, args.latent_size, args.depthT, args.depthG)
+#optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 #If restarting from a certain training epoch, model must load in state dictionary before model is wrapped by DDP
 if args.load_epoch > 0:
-    model.load_state_dict(torch.load(args.save_dir + "/model.iter-" + str(args.load_epoch)))
+    print("Restarting from last training epoch #", args.load_epoch)
 
-model = model.cuda(device=local_rank)
+    save_dict = torch.load(args.save_dir + "/model.epoch-" + str(args.load_epoch)) #
+    model.load_state_dict(save_dict['model_state_dict'])#
+    #optimizer.load_state_dict(save_dict['optimizer'])
+
+    #scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
+    #scheduler.load_state_dict(save_dict['scheduler'])
+    start_epoch = args.load_epoch + 1
+else:
+    start_epoch = 0
+    for param in model.parameters():
+        if param.dim() == 1:
+            nn.init.constant_(param, 0)
+        else:
+            nn.init.xavier_normal_(param)
+
+    #scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
 
 if args.mult_gpus == True:
+    print("Attempting to use more than one GPU")
+    local_rank = int(os.environ["LOCAL_RANK"]) #Environmental variable managed by Pytorch to tell the code which rank the GPU is for this instance
+    torch.cuda.set_device(local_rank)
+
+    init_process_group(backend='nccl')
+
+    model = model.cuda(device=local_rank)
     model = DDP(model, device_ids=[local_rank]) 
 
-print (model)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    
+else:
+    local_rank = 0
+    model = model.cuda()
 
-for param in model.parameters():
-    if param.dim() == 1:
-        nn.init.constant_(param, 0)
-    else:
-        nn.init.xavier_normal_(param)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-print ("Model #Params: %dK" % (sum([x.nelement() for x in model.parameters()]) / 1000,))
+if args.load_epoch > 0:
+    optimizer.load_state_dict(save_dict['optimizer'])
+    scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
+    scheduler.load_state_dict(save_dict['scheduler'])
 
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
-scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
+else:
+    scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
+
+print(model)
+
+#for param in model.parameters():
+#   if param.dim() == 1:
+#        nn.init.constant_(param, 0)
+#    else:
+#        nn.init.xavier_normal_(param)
+
+print("Model #Params: %dK" % (sum([x.nelement() for x in model.parameters()]) / 1000,))
+
+#optimizer = optim.Adam(model.parameters(), lr=args.lr)
+#scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
 
 param_norm = lambda m: math.sqrt(sum([p.norm().item() ** 2 for p in m.parameters()]))
 grad_norm = lambda m: math.sqrt(sum([p.grad.norm().item() ** 2 for p in m.parameters() if p.grad is not None]))
@@ -140,7 +181,7 @@ curr_time = time.time()
 bl_time = 0
 p1_time = 0
 
-for epoch in range(args.load_epoch, args.epoch):
+for epoch in range(start_epoch, args.epoch):
     shuffle = True
     loader = MolTreeFolder(args.train, vocab, args.batch_size, args.num_workers, shuffle, args.mult_gpus)
     
@@ -171,7 +212,6 @@ for epoch in range(args.load_epoch, args.epoch):
                 print(''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)))
 
             continue
-        
 
         p1_time = p1_time + time.time() - curr_time
         curr_time = time.time()
@@ -212,15 +252,34 @@ for epoch in range(args.load_epoch, args.epoch):
     
     print ('Total epochs, iterations = %d, %d ' % (epoch, total_step))
     
+    """
     if local_rank == 0:
         if args.mult_gpus == True:
             ckp = model.module.state_dict()
         else:
             ckp = model.state_dict()
         torch.save(ckp, args.save_dir + "/model.epoch-" + str(epoch))
-    
+        with open(args.save_dir + "lr.txt", "w") as f:
+            f.write()
+    """
+
+    if local_rank == 0:
+        if args.mult_gpus == True:
+            model_state_dict = model.module.state_dict()
+        else:
+            model_state_dict = model.state_dict()
+        
+        save_dict = {
+            'model_state_dict': model_state_dict,
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict()
+        }
+
+        torch.save(save_dict, args.save_dir + "/model.epoch-" + str(epoch))
+
 end_time = time.time()
 tot_time = end_time - start_time
 print ('Total time to run = %.0f seconds' % tot_time)
 
-torch.distributed.destroy_process_group()
+if args.mult_gpus == True:
+    destroy_process_group()
