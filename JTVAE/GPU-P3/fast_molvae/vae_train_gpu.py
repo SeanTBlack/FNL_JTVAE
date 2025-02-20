@@ -207,11 +207,17 @@ for epoch in range(start_epoch, args.epoch):
             optimizer.step()
 
         except Exception as e:
-            print("STB train EXCEPTION") #STB: TEMP
+            print("train EXCEPTION") #STB: TEMP
             print (e)
             
             if args.debug == True:
                 print(''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)))
+            
+            print("failed batch", batch)
+            for smi in batch:
+                print("smi: ", smi.get_smi())
+            
+            print("continue\n")
 
             continue
 
@@ -253,17 +259,6 @@ for epoch in range(start_epoch, args.epoch):
        print ("New learning rate: %.6f" % new_lr)
     
     print ('Total epochs, iterations = %d, %d ' % (epoch, total_step))
-    
-    """
-    if local_rank == 0:
-        if args.mult_gpus == True:
-            ckp = model.module.state_dict()
-        else:
-            ckp = model.state_dict()
-        torch.save(ckp, args.save_dir + "/model.epoch-" + str(epoch))
-        with open(args.save_dir + "lr.txt", "w") as f:
-            f.write()
-    """
 
     if local_rank == 0:
         if args.mult_gpus == True:

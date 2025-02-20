@@ -102,6 +102,9 @@ class MolTree(object):
         for node in self.nodes:
             node.assemble()
 
+    def get_smi(self):
+        return self.smiles
+
 def dfs(node, fa_idx):
     max_depth = 0
     for child in node.neighbors:

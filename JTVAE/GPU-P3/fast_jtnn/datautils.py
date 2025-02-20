@@ -49,7 +49,6 @@ class MolTreeFolder(object):
     def __init__(self, data_folder, vocab, batch_size, num_workers=4, shuffle=True, mult_gpus=False, assm=True, replicate=None):
         self.data_folder = data_folder
         self.data_files = [fn for fn in os.listdir(data_folder)]
-        #print(self.data_files)
 #JI
         random.shuffle(self.data_files)
 

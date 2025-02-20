@@ -73,3 +73,8 @@ if __name__ == "__main__":
     print ('Number of SMILES processed = ', len(data))
     print ('Preprocessed files stored in ', opts.dump_path)
     print ('Time taken to preprocess   = %.0f seconds' % (time.time() - start_time))
+
+smiles, mols = [], []
+for smi, mol in all_data:
+    smiles.append(smi)
+    mols.append(mol)
