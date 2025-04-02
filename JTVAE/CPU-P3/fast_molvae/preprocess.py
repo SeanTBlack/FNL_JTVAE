@@ -7,7 +7,7 @@ from optparse import OptionParser
 import pickle
 import rdkit
 import rdkit.Chem as Chem
-import time
+import time, os
 
 from fast_jtnn import *
 
@@ -63,6 +63,9 @@ if __name__ == "__main__":
     for split_id in range(num_splits):
         st = split_id * le
         sub_data = all_data[st : st + le]
+
+        if not os.path.isdir(opts.dump_path):
+            os.mkdir(opts.dump_path)
 
         with open(opts.dump_path + '/tensors-%d.pkl' % split_id, 'wb') as f:
             pickle.dump(sub_data, f, pickle.HIGHEST_PROTOCOL)

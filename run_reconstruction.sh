@@ -8,8 +8,8 @@ WRK="/data/reconstruction_eval"
 cd $WRK
 
 CODE="$JTVAE_CPU_PATH""/fast_molvae/EDF.py"
-DAT="/data/data/test.txt"
-VOC="/data/vocabulary/all_vocab.txt"
+DAT="/data/test.txt"
+VOC="/data/all_vocab.txt"
 MOD="/data/trained_models/model.epoch-<enter_model_number_here>"
 OUT="/data/reconstruction_eval/recon.out-<enter_model_number_here>"
 

@@ -8,6 +8,6 @@ WRK="/data/vocabulary"
 cd $WRK
 
 CODE="$JTVAE_CPU_PATH""/fast_jtnn/mol_tree.py"
-DATA="/data/data"
-OUT="all_vocab.txt"
+DATA="/data/all.txt"
+OUT="/data/all_vocab.txt"
 time python $CODE < $DAT > $OUT

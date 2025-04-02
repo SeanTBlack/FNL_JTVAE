@@ -91,6 +91,9 @@ print(args)
 vocab = [x.strip("\r\n ") for x in open(args.vocab)] 
 vocab = Vocab(vocab)
 
+if not os.path.isdir(args.save_dir):
+    os.mkdir(args.save_dir)
+
 """
 ### STB - DDP related code
 if args.mult_gpus == True:

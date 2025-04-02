@@ -8,8 +8,8 @@ WRK="/data/preprocess"
 cd $WRK
 
 CODE="$JTVAE_CPU_PATH""/fast_molvae/preprocess.py"
-TRA="/data/data/train.txt"
-DIR="/data/preprocess/preprocessed-train"
+TRA="/data/train.txt"
+DIR="/data/preprocessed-train"
 OUT="preprocess-train.out"
 time python $CODE -t $TRA       \
             -n 100 -j 36  \
